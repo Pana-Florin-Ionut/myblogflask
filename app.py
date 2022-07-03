@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, flash
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 import os
@@ -9,10 +9,6 @@ from flask_wtf import FlaskForm
 from wtforms import (
     StringField,
     SubmitField,
-    PasswordField,
-    BooleanField,
-    ValidationError,
-    TextAreaField,
 )
 from wtforms.validators import DataRequired
 from wtforms.widgets import TextArea
@@ -24,7 +20,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("APP_SECRET_KEY")
 database_url = os.environ["POSTGRES_URI"]
 # print(database_url)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("POSTGRESQL_DATABASE_URI")
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
@@ -48,7 +44,15 @@ class UserForm(FlaskForm):
 @app.route("/", methods=["GET", "POST"])
 def index():
     form = UserForm()
+    if request.method == "POST":
+        user = User(id=form.no.data, username=form.username.data, email=form.email.data)
+        form.no.data = ""
+        form.username.data = ""
+        form.email.data = ""
 
+        db.session.add(user)
+        db.session.commit()
+        flash("User added")
     return render_template("/index.html", form=form)
 
 
